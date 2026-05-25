@@ -1,0 +1,59 @@
+<!-- Firebase SDK読み込み -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ★ STEP5で取得したconfigを貼り付け
+const firebaseConfig = {
+  apiKey: "AIzaSyCCXS7VkDZywh84EtS3AtTUfdvOmdKEyaM",
+  authDomain: "musicar-c18e9.firebaseapp.com",
+  databaseURL: "https://musicar-c18e9-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "musicar-c18e9",
+  storageBucket: "musicar-c18e9.firebasestorage.app",
+  messagingSenderId: "546300872409",
+  appId: "1:546300872409:web:53b357be74d3e5a136e0c8"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  // SHA-256ハッシュ関数
+  async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // 送信ボタンの処理
+  document.getElementById('sendBtn').addEventListener('click', async () => {
+    const password = document.getElementById('passwordInput').value;
+    if (!password) return;
+
+    try {
+      // 匿名ログイン
+      const userCredential = await signInAnonymously(auth);
+      const uid = userCredential.user.uid;
+
+      // ハッシュ化
+      const passwordHash = await sha256(password);
+
+      // Firebaseへ送信
+      await set(ref(db, `authRequest/${uid}`), {
+        passwordHash: passwordHash,
+        timestamp: Date.now()
+      });
+
+      alert('送信しました');
+    } catch (error) {
+      console.error('エラー:', error);
+      alert('送信失敗: ' + error.message);
+    }
+  });
+</script>
+
+<!-- HTML側 -->
+<input type="password" id="passwordInput" placeholder="パスワードを入力">
+<button id="sendBtn">送信</button>
